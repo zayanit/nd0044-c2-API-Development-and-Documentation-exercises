@@ -8,13 +8,12 @@ from models import setup_db, Book
 
 BOOKS_PER_SHELF = 8
 
-def paginate_books(request, allBooks):
+def get_books(request):
   page = request.args.get('page', 1, type=int)
   start = (page - 1) * BOOKS_PER_SHELF
-  end = start + BOOKS_PER_SHELF
-  books = [book.format() for book in allBooks]
-  current_books = books[start:end]
-  return current_books
+  books = Book.query.order_by(Book.id).limit(BOOKS_PER_SHELF).offset(start)
+  books = [book.format() for book in books]
+  return books
 
 def create_app(test_config=None):
   # create and configure the app
@@ -31,15 +30,14 @@ def create_app(test_config=None):
 
   @app.route('/books')
   def retrieve_books():
-    allBooks = Book.query.order_by(Book.id).all()
-    current_books = paginate_books(request, allBooks)
+    books = get_books(request)
 
-    if len(current_books) == 0:
+    if len(books) == 0:
       abort(404)
 
     return jsonify({
       'success': True,
-      'books': current_books,
+      'books': books,
       'total_books': len(Book.query.all())
     })
 
@@ -75,19 +73,17 @@ def create_app(test_config=None):
         abort(404)
 
       book.delete()
-      allBooks = Book.query.order_by(Book.id).all()
-      current_books = paginate_books(request, allBooks)
+      books = get_books(request)
 
       return jsonify({
         'success': True,
         'deleted': book_id,
-        'books': current_books,
+        'books': books,
         'total_books': len(Book.query.all())
       })
 
     except:
       abort(422)
-
 
   @app.route('/books', methods=['POST'])
   def create_book():
@@ -101,13 +97,12 @@ def create_app(test_config=None):
       book = Book(title=new_title, author=new_author, rating=new_rating)
       book.insert()
 
-      allBooks = Book.query.order_by(Book.id).all()
-      current_books = paginate_books(request, allBooks)
+      books = get_books(request)
 
       return jsonify({
         'success': True,
         'created': book.id,
-        'books': current_books,
+        'books': books,
         'total_books': len(Book.query.all())
       })
 
