@@ -86,6 +86,28 @@ class BookTestCase(unittest.TestCase):
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], 'bad request')
 
+    def test_delete_book(self):
+        res = self.client().delete('/books/2')
+        data = json.loads(res.data)
+
+        book = Book.query.filter(Book.id == 2).one_or_none()
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertEqual(data['deleted'], 2)
+        self.assertTrue(data['total_books'])
+        self.assertTrue(len(data['books']))
+        self.assertEqual(book, None)
+        
+
+    def test_422_if_book_does_not_exist(self):
+        res = self.client().delete('/books/1000')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'unprocessable') 
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
